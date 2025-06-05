@@ -6,12 +6,10 @@ See our [AOOS Project Page](https://aoos.org/project/yukon-river-chinook-run-tim
 
 ## 2025 Forecast
 
-TODO
+See [pre-season-foreast](./pre-season-forecast/README.md) for more detail.
 
-### Chart 1
-
-TODO
-
-### Chart 2
-
-TODO
+| percentile | prediction |
+|:-----------|-----------:|
+| fifdj      |         13 |
+| qdj        |         16 |
+| mdj        |         21 |
