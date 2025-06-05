@@ -525,7 +525,9 @@ forecast_timeseries
 ### Median dates over time
 
 ``` r
-yukon <- yukon %>% mutate(diff = mdj - mean(mdj, na.rm = TRUE))
+yukon <- yukon %>%
+  mutate(diff = mdj - mean(mdj, na.rm = TRUE))
+
 ggplot(data = yukon, aes(year, diff)) +
   geom_line() +
   geom_point() +
@@ -533,7 +535,7 @@ ggplot(data = yukon, aes(year, diff)) +
   geom_hline(yintercept=0) +
   xlab("Year") +
   ylab(NULL) +
-  ggtitle("Median Run Timing Anomalies (days), 1961–2022",
+  ggtitle(paste0("Median Run Timing Anomalies (days) ", min(yukon$year), "–", max(yukon$year)-1),
           subtitle = "+ = later, - = earlier")
 ```
 
