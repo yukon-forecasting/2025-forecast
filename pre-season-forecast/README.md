@@ -15,10 +15,16 @@ library(ggtext)
 ```
 
 ``` r
+base_path <- file.path("./pre-season-forecast")
+figures_path <- file.path(base_path, "figures")
+output_path <- file.path(base_path, "output")
+```
+
+``` r
 forecast_year <- 2025
 suppressWarnings({
-  dir.create("./figures")
-  dir.create("./output")
+  dir.create(figures_path)
+  dir.create(output_path)
 })
 theme_set(theme_bw())
 ```
@@ -26,8 +32,10 @@ theme_set(theme_bw())
 ## Data
 
 ``` r
-environment <- read_csv("../../data/data/environment/environment.csv")
-cpue <- read_csv("../../data/data/cpue/cpue.csv")
+# Assumes we have a checkout of https://github.com/yukon-forecasting/
+# next to this checkout
+environment <- read_csv("../data/data/environment/environment.csv")
+cpue <- read_csv("../data/data/cpue/cpue.csv")
 yukon <- left_join(environment, cpue)
 ```
 
@@ -47,7 +55,7 @@ p_amatc
 ![](pre-season-forecast_files/figure-commonmark/amatcfigure-1.png)
 
 ``` r
-ggsave("./figures/mdj_against_amatc.png", width = 4, height = 4)
+ggsave(file.path(figures_path, "mdj_against_amatc.png"), width = 4, height = 4)
 ```
 
 ### MDJ vs. MSSTC
@@ -64,7 +72,7 @@ p_msstc
 ![](pre-season-forecast_files/figure-commonmark/msstcfigure-1.png)
 
 ``` r
-ggsave("./figures/mdj_against_msstc.png", width = 4, height = 4)
+ggsave(file.path(figures_path, "mdj_against_msstc.png"), width = 4, height = 4)
 ```
 
 ### MDJ vs. PICE
@@ -84,7 +92,7 @@ p_pice
 ![](pre-season-forecast_files/figure-commonmark/picefigure-1.png)
 
 ``` r
-ggsave("./figures/mdj_against_pice.png", width = 4, height = 4)
+ggsave(file.path(figures_path, "mdj_against_pice.png"), width = 4, height = 4)
 ```
 
 ### Combined
@@ -97,13 +105,14 @@ p_all
 ![](pre-season-forecast_files/figure-commonmark/unnamed-chunk-1-1.png)
 
 ``` r
-ggsave("./figures/three_panel.png", width = 9, height = 3)
+ggsave(file.path(figures_path, "three_panel.png"), width = 9, height = 3)
 ```
 
 ### Time series of AMATC, MSSTC, PICE
 
 ``` r
 p1 <- ggplot(yukon, aes(year, amatc)) +
+  geom_point() +
   geom_line() +
   geom_point(data = subset(yukon, year == forecast_year)) +
   geom_hline(yintercept = mean(yukon[yukon$year < forecast_year, "amatc"][[1]])) +
@@ -111,6 +120,7 @@ p1 <- ggplot(yukon, aes(year, amatc)) +
   theme(axis.title.x = element_blank())
 
 p2 <- ggplot(yukon, aes(year, msstc)) +
+  geom_point() +
   geom_line() +
   geom_point(data = subset(yukon, year == forecast_year)) +
   geom_hline(yintercept = mean(yukon[yukon$year < forecast_year, "msstc"][[1]])) +
@@ -118,6 +128,7 @@ p2 <- ggplot(yukon, aes(year, msstc)) +
   theme(axis.title.x = element_blank())
 
 p3 <- ggplot(yukon, aes(year, pice)) +
+  geom_point() +
   geom_line() +
   geom_point(data = subset(yukon, year == forecast_year)) +
   geom_hline(yintercept = mean(yukon[yukon$year < forecast_year, "pice"][[1]], na.rm = TRUE)) +
@@ -133,7 +144,7 @@ timeseries_3p
 ![](pre-season-forecast_files/figure-commonmark/timeseries-1.png)
 
 ``` r
-ggsave("./figures/timseries_3p.png", timeseries_3p, width = 8, height = 6)
+ggsave(file.path(figures_path, "timseries_3p.png"), timeseries_3p, width = 8, height = 6)
 ```
 
 ## Modeling
@@ -161,8 +172,11 @@ models
 # Set up selection
 
 ``` r
+# We can only do one-step-aehad hindcasting where we have data to so do
+final_year_with_cpue_data <- 2023
+
 hindcast_window <- 15 # last n years
-hindcast_years <- seq(forecast_year - hindcast_window, forecast_year - 1)
+hindcast_years <- seq(final_year_with_cpue_data - hindcast_window, final_year_with_cpue_data - 1)
 round_method <- floor # Floor predictions
 
 hindcast_year <- function(data, model, forecast_year) {
@@ -233,16 +247,16 @@ knitr::kable(model_selection_result)
 
 | model                      | MAPE | SDMAPE | width | p.in | absmax | meanbias |
 |:---------------------------|-----:|-------:|------:|-----:|-------:|---------:|
-| mdj ~ amatc                | 4.20 |   2.86 |  6.26 | 0.47 |     12 |    -4.07 |
-| mdj ~ msstc                | 1.60 |   1.50 |  4.39 | 0.67 |      5 |    -0.67 |
-| mdj ~ pice                 | 3.67 |   3.48 |  6.62 | 0.60 |     11 |    -3.53 |
-| mdj ~ amatc + msstc        | 2.33 |   1.72 |  5.86 | 0.67 |      7 |    -1.67 |
-| mdj ~ amatc + pice         | 3.87 |   3.20 |  8.31 | 0.47 |     10 |    -3.73 |
-| mdj ~ msstc + pice         | 2.20 |   2.21 |  7.00 | 0.80 |      7 |    -1.40 |
-| mdj ~ amatc + msstc + pice | 2.27 |   1.94 |  8.21 | 0.87 |      6 |    -1.60 |
+| mdj ~ amatc                | 4.40 |   2.72 |  6.05 | 0.40 |     12 |    -4.40 |
+| mdj ~ msstc                | 1.73 |   1.53 |  4.42 | 0.60 |      5 |    -0.93 |
+| mdj ~ pice                 | 3.73 |   3.45 |  6.73 | 0.60 |     11 |    -3.60 |
+| mdj ~ amatc + msstc        | 2.40 |   1.72 |  5.77 | 0.60 |      7 |    -2.00 |
+| mdj ~ amatc + pice         | 4.07 |   3.03 |  8.03 | 0.40 |     10 |    -3.93 |
+| mdj ~ msstc + pice         | 2.27 |   2.19 |  7.03 | 0.80 |      7 |    -1.60 |
+| mdj ~ amatc + msstc + pice | 2.27 |   1.94 |  8.01 | 0.87 |      6 |    -1.87 |
 
 ``` r
-write.csv(model_selection_result, file = "./output/model_select.csv")
+write.csv(model_selection_result, file = file.path(output_path, "model_select.csv"))
 ```
 
 ### 15%
@@ -271,7 +285,7 @@ summary(model_fifdj)
     Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
     Residual standard error: 3.4 on 50 degrees of freedom
-      (9 observations deleted due to missingness)
+      (10 observations deleted due to missingness)
     Multiple R-squared:  0.5474,    Adjusted R-squared:  0.5202 
     F-statistic: 20.16 on 3 and 50 DF,  p-value: 1.065e-08
 
@@ -305,7 +319,7 @@ summary(model_qdj)
     Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
     Residual standard error: 3.221 on 50 degrees of freedom
-      (9 observations deleted due to missingness)
+      (10 observations deleted due to missingness)
     Multiple R-squared:  0.5743,    Adjusted R-squared:  0.5488 
     F-statistic: 22.49 on 3 and 50 DF,  p-value: 2.346e-09
 
@@ -339,7 +353,7 @@ summary(model_mdj)
     Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
     Residual standard error: 2.974 on 50 degrees of freedom
-      (9 observations deleted due to missingness)
+      (10 observations deleted due to missingness)
     Multiple R-squared:  0.5904,    Adjusted R-squared:  0.5659 
     F-statistic: 24.03 on 3 and 50 DF,  p-value: 9.061e-10
 
@@ -356,15 +370,15 @@ predictions <- data.frame(
     prediction_mdj
   ))
 )
-write_csv(predictions, file = "./output/predictions.csv")
+write_csv(predictions, file = file.path(output_path, "predictions.csv"))
 kable(predictions)
 ```
 
 | percentile | prediction |
 |:-----------|-----------:|
-| fifdj      |         14 |
-| qdj        |         17 |
-| mdj        |         23 |
+| fifdj      |         13 |
+| qdj        |         16 |
+| mdj        |         21 |
 
 # Historical Comparisons
 
@@ -407,12 +421,12 @@ kable(long_term_means)
 
 | variable | current_year_value | long_term_mean | cur_minus_ltm | range          |
 |:---------|-------------------:|---------------:|--------------:|:---------------|
-| AMATC    |             -4.260 |     -6.6368254 |     2.3768254 | -17.1 to 1.3   |
-| MSSTC    |             -2.130 |     -0.4909365 |    -1.6390635 | -3.8 to 2.8    |
-| PICE     |              0.569 |      0.5395741 |     0.0294259 | 0.078 to 0.784 |
-| FIFDJ    |                 NA |     13.7936508 |            NA | 5 to 23        |
-| QDJ      |                 NA |     16.1587302 |            NA | 6 to 26        |
-| MDJ      |                 NA |     21.2698413 |            NA | 10 to 32       |
+| AMATC    |             -4.980 |     -6.5996875 |     1.6196875 | -17.1 to 1.3   |
+| MSSTC    |             -0.909 |     -0.5165469 |    -0.3924531 | -3.8 to 2.8    |
+| PICE     |              0.608 |      0.5401091 |     0.0678909 | 0.078 to 0.784 |
+| FIFDJ    |                 NA |             NA |            NA | NA to NA       |
+| QDJ      |                 NA |             NA |            NA | NA to NA       |
+| MDJ      |                 NA |             NA |            NA | NA to NA       |
 
 ``` r
 long_term_timing_means <- data.frame(
@@ -437,15 +451,15 @@ hindcast_all_percentiles <- rbind(
   hindcast_fifdj,
   hindcast_qdj,
   hindcast_mdj)
-write_csv(hindcast_all_percentiles, "output/hindcast_all_models.csv")
+write_csv(hindcast_all_percentiles, file.path(output_path, "hindcast_all_models.csv"))
 kable(hindcast_all_percentiles)
 ```
 
 | model                        | MAPE | SDMAPE | width | p.in | absmax | meanbias |
 |:-----------------------------|-----:|-------:|------:|-----:|-------:|---------:|
-| fifdj ~ amatc + msstc + pice | 3.13 |   2.70 |  8.37 | 0.87 |      9 |    -0.33 |
-| qdj ~ amatc + msstc + pice   | 2.93 |   2.89 |  7.84 | 0.73 |      9 |    -0.40 |
-| mdj ~ amatc + msstc + pice   | 2.27 |   1.94 |  8.21 | 0.87 |      6 |    -1.60 |
+| fifdj ~ amatc + msstc + pice | 2.93 |   2.74 |  8.09 | 0.87 |      9 |    -0.53 |
+| qdj ~ amatc + msstc + pice   | 2.67 |   2.87 |  7.58 | 0.73 |      9 |    -0.67 |
+| mdj ~ amatc + msstc + pice   | 2.27 |   1.94 |  8.01 | 0.87 |      6 |    -1.87 |
 
 ``` r
 hindcast_models <- c(
@@ -481,7 +495,7 @@ predicted_vs_observed <- ggplot(hindcast, aes(observed, predicted)) +
   theme(strip.background = element_rect(fill=NA, colour=NA),
         strip.text = element_text(hjust = 0))
 
-ggsave("figures/predicted_vs_observed.png",
+ggsave(file.path(figures_path, "predicted_vs_observed.png"),
   predicted_vs_observed,
   width = 8,
   height = 3

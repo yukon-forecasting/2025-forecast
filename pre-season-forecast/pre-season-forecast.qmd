@@ -1,7 +1,6 @@
 ---
 title: "2025 Pre-Season Forecast"
 format:
-  html: default
   gfm:
     output-file: README.md
 ---
@@ -57,7 +56,7 @@ p_amatc <- ggplot(yukon, aes(amatc, mdj)) +
 
 p_amatc
 
-ggsave("./figures/mdj_against_amatc.png", width = 4, height = 4)
+ggsave(file.path(figures_path, "mdj_against_amatc.png"), width = 4, height = 4)
 ```
 
 ### MDJ vs. MSSTC
@@ -323,7 +322,7 @@ hindcast_all_percentiles <- rbind(
   hindcast_fifdj,
   hindcast_qdj,
   hindcast_mdj)
-write_csv(hindcast_all_percentiles, "output/hindcast_all_models.csv")
+write_csv(hindcast_all_percentiles, file.path(output_path, "hindcast_all_models.csv"))
 kable(hindcast_all_percentiles)
 ```
 
